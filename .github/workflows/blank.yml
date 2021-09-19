@@ -1,0 +1,81 @@
+While 1
+    $nMsg = GUIGetMsg()
+    Switch $nMsg
+
+        Case $Btn_OK2
+            If GUICtrlRead($Dll_File_Name) = $lang[25] Then ; MyDll
+                MsgBox(32 + 8192, $lang[53], $lang[54] & @TAB) ; Dll File Name ; Please, Enter The Name Of Your Dll
+                GUICtrlSetState($Dll_File_Name, $GUI_FOCUS)
+            Else
+                GUICtrlSetData($Dll_File_Name, StringReplace(GUICtrlRead($Dll_File_Name), " ", "_"))
+                SetDllData()
+                GUIDelete($Res_Gui_2)
+                AddIcons()
+            EndIf
+        Case $UpD1, $UpD2, $UpD3, $UpD4
+            _UpdateVerNum()
+        Case $GUI_EVENT_PRIMARYDOWN
+            _UpdateVerNum()
+        Case $GUI_EVENT_CLOSE
+            TraySetState(2)
+            Exit
+    EndSwitch
+WEnd
+
+Func AddIcons()
+    Global $__aGUIDropFiles = 0, $aDrop_List = 0
+    Global $txtInput = "Drag and drop your .ico files here"
+    $mGUI = GUICreate("ico2dll", 900, 400, -1, -1, "", $WS_EX_ACCEPTFILES)
+    $dBox = GUICtrlCreateEdit($txtInput, 10, 10, 874, 300)
+    GUICtrlSetState($dBox, $GUI_DROPACCEPTED)
+    $gBut = GUICtrlCreateButton("Go", 10, 320, 75, 25)
+    $eBut = GUICtrlCreateButton("Exit", 810, 320, 75, 25)
+    GUISetState()
+    GUIRegisterMsg($WM_DROPFILES, 'On_WM_DROPFILES')
+    While 1
+        $nMsg = GUIGetMsg()
+        Switch $nMsg
+            Case $GUI_EVENT_CLOSE
+                TraySetState(2)
+                DirRemove($tmp, 1)
+                Exit
+            Case $eBut
+                TraySetState(2)
+                DirRemove($tmp, 1)
+                Exit
+            Case $GUI_EVENT_DROPPED
+                GUICtrlSetData($dBox, "")
+                For $i = 1 To $aDrop_List[0]
+                    $old = GUICtrlRead($dBox)
+                    $new = $old & $aDrop_List[$i] & @CRLF
+                    GUICtrlSetData($dBox, $new)
+                Next
+            Case $gBut
+                $check = GUICtrlRead($dBox)
+                If $check = $txtInput Then
+                    MsgBox(0, "Error", "You must drag-and-drop some .ico files into the box")
+                    ContinueLoop
+                Else
+                    $iData = StringSplit($check, @LF)
+                EndIf
+                GUIDelete($mGUI)
+                _MouseTrap(0, 0, 1, 1)
+                CopyTemp()
+                Rmv256()
+                GenDll()
+                _MouseTrap()
+        EndSwitch
+    WEnd
+EndFunc   ;==>AddIcons
+
+Func Rmv256()
+    DirCreate($tmprmv)
+    IniWrite(@ScriptDir & "\aicon.ini", "Option", "ListViewMode", "0")
+    IniWrite(@ScriptDir & "\aicon.ini", "Option", "InitialDir", "C:\ico2dlltemp")
+    Global $PID2 = ""
+    $last = "placeholder"
+    $Amow = 100
+    $hWnd2 = ""
+    $aPID = Run(@ScriptDir & "\aicon.exe")
+    WinWaitActive("@icon sushi", "", 10)
+    $theWinlist = WinList()
